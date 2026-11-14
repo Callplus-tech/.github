@@ -1,0 +1,23 @@
+# Adota o fluxo de desenvolvimento da Callplus neste repositório.
+# Copie para .github/workflows/padrao-callplus.yml no repositório de produto.
+name: Padrão Callplus
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review, closed]
+  issues:
+    types: [assigned, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  padrao-pr:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    uses: Callplus-tech/.github/.github/workflows/padrao-pr.yml@main
+
+  board:
+    uses: Callplus-tech/.github/.github/workflows/sincroniza-board.yml@main
+    secrets: inherit

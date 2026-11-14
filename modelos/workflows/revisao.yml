@@ -1,0 +1,21 @@
+# Revisão de código em todo PR: Codex (automática) ou label "revisao-manual" do PO (contingência).
+name: Revisão de código
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+jobs:
+  revisao:
+    # Economia de minutos: label só importa quando é o revisao-manual; outros labels não mudam a revisão.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+      github.event.label.name == 'revisao-manual'
+    uses: Callplus-tech/.github/.github/workflows/revisao-codigo.yml@main
+    secrets: inherit
