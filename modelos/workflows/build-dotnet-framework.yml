@@ -1,0 +1,16 @@
+# Build e testes em todo PR e em todo push nas branches principais (projetos .NET Framework, em Windows).
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [development, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: Callplus-tech/.github/.github/workflows/build-dotnet-framework.yml@main
+    with:
+      solucao: caminho/da/Solucao.sln
