@@ -7,7 +7,8 @@ Inventário de 2026-11-14, atualizado em 2026-11-18.
 | `api.callplus` | API | C# / .NET 10 | Em desenvolvimento | Mesmas configurações da `api.v2.ticketpraja` |
 | `app.callplus` | App web | Next.js / TypeScript | Em desenvolvimento | Mesmas configurações do `marketplace.ticketpraja`, conduzido pelo Claude |
 | `app.acl.meli1p.crm.callplus` | App desktop + API | C# / .NET Framework 4.x (Windows Forms, ASP.NET Web API) | Produção | CRM/tabulador da operação ACL Mercado Livre 1P. Cópia, com histórico, do `HMB-Tecnologia/CALLPLUS_ACL_MP_ML1P` (14/11/2026). Build em Windows (`build-dotnet-framework.yml`) |
-| `infra.callplus` | Infraestrutura | Markdown | Ativo | Inventário e decisões de infraestrutura da plataforma (privado, criado em 18/11/2026) |
+| `web.callplus` | Site | HTML / CSS | Em desenvolvimento | Site institucional em `callplus.com.br`, página estática no mesmo formato do `Ideavelo/website` (criado em 18/11/2026) |
+| `infra.callplus` | Infraestrutura | Markdown | Ativo | Inventário e decisões de infraestrutura da plataforma, tema do Keycloak e kit de identidade visual (privado, criado em 18/11/2026) |
 | `.github` | Institucional | Markdown | Ativo | Padrões, modelos e automações da organização |
 
 ## Regras
