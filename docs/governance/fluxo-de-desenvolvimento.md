@@ -93,7 +93,7 @@ fix: corrige envio duplicado de mensagem
 4. O agente mostra o resumo do que mudou. **Revise o diff.** Peça ajustes até ficar bom.
 5. Autorize o commit. O agente faz commit e abre o PR para `development`.
 6. A validação automática confere branch, título e vínculo com a issue, e o build compila, roda o lint e os testes. Se algo falhar, peça ao agente para corrigir.
-7. O PR precisa de revisão: o Codex revisa automaticamente. Se o Codex estiver fora do ar ou sem cota, o Rafael revisa e coloca o label `revisao-manual` (só ele pode; commits novos removem o label).
+7. O PR precisa de revisão: o Claude revisa automaticamente o último commit (job **Revisão pelo Claude**) e publica no PR um comentário com os apontamentos por prioridade (P0, P1, P2). Corrija o que for procedente com novos commits; cada commit novo é revisado de novo. PR em rascunho só é revisado quando ficar pronto. Se a revisão automática estiver fora do ar, o Rafael revisa e coloca o label `revisao-manual` (só ele pode; commits novos removem o label).
    - Se a revisão pedir ajustes (**Review changes → Request changes**), o card volta para **Em andamento** e o responsável é avisado na issue. Os novos commits devolvem o card para **Em revisão**.
    - Se o PR for fechado sem merge, o card volta para **Em andamento** (ou **Pronto**, sem responsável), com aviso na issue.
 8. Com a validação e a revisão verdes, o próprio desenvolvedor faz o merge em `development`. Não há revisão de outra pessoa nesta etapa: a revisão é a do desenvolvedor sobre o código gerado (passo 4), a revisão automática ou manual (passo 7), e a homologação é o teste. O card vai para **Homologação**.
@@ -109,7 +109,7 @@ Depois de um `hotfix/`, leve a correção de volta para a `development`: crie um
 | `development` (homologação) | Não exige aprovação | O próprio desenvolvedor, com a validação verde | Ruleset `protege-development`: PR obrigatório e checks **Validar padrão do PR**, **Build e testes** e **Revisão de código**; sem push direto |
 | `main`/`master` (produção), inclusive `hotfix/` | Não exige aprovação | **Somente o Rafael** | Ruleset `producao-somente-po`: PR obrigatório e só o owner da organização atualiza a branch, e apenas por PR |
 
-O agente de IA nunca mescla nem aprova nada: quem mescla em `development` é o desenvolvedor, depois de revisar o que o agente gerou. A exceção é um repositório conduzido só pelo Claude, registrada no `AGENTS.md` dele (hoje, o `app.callplus`).
+O agente de IA nunca mescla nem aprova nada: quem mescla em `development` é o desenvolvedor, depois de revisar o que o agente gerou. A exceção é um repositório conduzido só pelo Claude, registrada no `AGENTS.md` dele (hoje, o `app.callplus` e o `app.acl.meli1p.crm.callplus`).
 
 ## O que é automático e o que bloqueia
 
@@ -117,7 +117,8 @@ O agente de IA nunca mescla nem aprova nada: quem mescla em `development` é o d
 |---|---|---|
 | Padrão de branch, título e `Closes #N` | `padrao-pr.yml` | Sim, em todos os repositórios de produto |
 | Build, lint e testes (`build / Build e testes`) | `build-dotnet.yml` ou `build-node.yml` | Sim, em todos os repositórios de produto |
-| Revisão do PR (`revisao / Revisão de código`): Codex no último commit, ou label `revisao-manual` colocado pelo Rafael | `revisao-codigo.yml` + `scripts/revisao-codigo.js` | Sim, em todos os repositórios de produto |
+| Revisão automática do PR pelo Claude (`revisao / Revisão pelo Claude`), a cada commit | `revisao-codigo.yml` + `scripts/revisao-claude.md` + `scripts/revisao-claude-publicar.js` | Não por si; alimenta o check abaixo |
+| Revisão do PR (`revisao / Revisão de código`): Claude no último commit, ou label `revisao-manual` colocado pelo Rafael | `revisao-codigo.yml` + `scripts/revisao-codigo.js` | Sim, em todos os repositórios de produto |
 | Movimento dos cards | `sincroniza-board.yml` | Nunca |
 | Card ainda em Homologação no PR de release (`board / Portão de release`) | `sincroniza-board.yml` + `scripts/portao-release.js` | Avisa em vermelho; o Rafael pode mesclar mesmo assim |
 | PR obrigatório e validação verde em `development` | Ruleset `protege-development` | Sim, em todos os repositórios de produto |
@@ -140,26 +141,30 @@ Todo repositório novo segue estes passos ao ser criado:
    - `modelos/workflows/build-dotnet.yml` ou `modelos/workflows/build-node.yml` → `.github/workflows/build.yml` (ajustando o caminho do projeto no .NET)
    - `modelos/workflows/revisao.yml` → `.github/workflows/revisao.yml`
 3. Criar os labels `needs-owner` ("Aguardando decisão do PO", vermelho), `blocked` ("Parada por impedimento técnico ou externo", laranja) e `revisao-manual` ("Revisado manualmente pelo PO", verde).
-4. Nas regras da organização (Settings → Rulesets), incluir o repositório em:
+4. Nos segredos da organização (Settings → Secrets and variables → Actions), incluir o repositório na lista de **Selected repositories** do `CLAUDE_CODE_OAUTH_TOKEN`. Sem isso, a revisão pelo Claude falha e o check **Revisão de código** fica vermelho.
+5. Nas regras da organização (Settings → Rulesets), incluir o repositório em:
    - `protege-development` (branch `development`: PR sem aprovação mínima, checks **Validar padrão do PR**, **Build e testes** e **Revisão de código**, sem exclusão nem force push, sem exceções);
    - `producao-somente-po` (branch padrão: PR sem aprovação mínima e **Restrict updates**, com exceção apenas para **Organization admin** no modo **For pull requests only**).
-5. Levar os arquivos do passo 2 para a `development` com uma issue e um PR `chore/N-sincroniza-development`, que já serve de teste do fluxo.
-6. Atualizar a tabela abaixo.
+6. Levar os arquivos do passo 2 para a `development` com uma issue e um PR `chore/N-sincroniza-development`, que já serve de teste do fluxo.
+7. Atualizar a tabela abaixo.
 
 | Repositório | Situação |
 |---|---|
 | `.github` | Exceção: só o Rafael mescla na `main` (`producao-somente-po`); não usa `development` |
 | `api.callplus` | Criado no fluxo em 14/11/2026, com as mesmas configurações da `api.v2.ticketpraja` (.NET 10) |
 | `app.callplus` | Criado no fluxo em 14/11/2026, com as mesmas configurações do `marketplace.ticketpraja` (Next.js), conduzido pelo Claude (exceção no `AGENTS.md` do repositório) |
+| `app.acl.meli1p.crm.callplus` | Cópia com histórico de `HMB-Tecnologia/CALLPLUS_ACL_MP_ML1P` em 14/11/2026 (.NET Framework, build em Windows), conduzido pelo Claude (exceção no `AGENTS.md` do repositório) |
 
 ## Limites do que o GitHub garante
 
 - "Só o Rafael mescla em produção" é garantido pelo papel **owner da organização**, e não pelo usuário dele. Quando houver um segundo owner, ele também poderá mesclar.
-- Em `development` não há segunda pessoa olhando o código antes do merge. O que segura a qualidade é a revisão do próprio desenvolvedor, a validação automática e o teste em homologação. Na produção, o merge do Rafael é o portão.
+- Em `development` não há segunda pessoa olhando o código antes do merge. O que segura a qualidade é a revisão do próprio desenvolvedor, a revisão automática pelo Claude, a validação automática e o teste em homologação. Na produção, o merge do Rafael é o portão.
+- A revisão automática usa a assinatura do Claude do Rafael (token de 1 ano no segredo `CLAUDE_CODE_OAUTH_TOKEN`, gerado com `claude setup-token`). Se o token vencer ou o limite do plano acabar, o check fica vermelho e vale a revisão manual até o token ser renovado.
 - Os agentes usam a credencial do desenvolvedor, e o GitHub não distingue o agente do desenvolvedor. No Claude Code, o `.claude/settings.json` bloqueia merge, aprovação e push em branch protegida; no Cursor, a proibição vem só da instrução no `AGENTS.md`. Os bloqueios do Claude Code são uma proteção a mais, não uma garantia: um comando escrito de outra forma pode escapar deles. Em produção, o que impede um merge sem autorização é a regra `producao-somente-po`.
-- Agentes que usam a conta do Rafael (Claude, ChatGPT) conseguem mesclar em produção como ele. Por isso assinam tudo o que escrevem (regra 10 do `AGENTS.md`).
+- Agentes que usam a conta do Rafael conseguem mesclar em produção como ele. Por isso assinam tudo o que escrevem (regra 10 do `AGENTS.md`).
 - As regras ficam na organização, e só owners da organização podem alterá-las. Os desenvolvedores têm acesso de escrita, não de administrador.
 
-## Pré-requisito único
+## Pré-requisitos
 
-Um GitHub App da organização para mover os cards, com os secrets `CP_BOARD_APP_ID` e `CP_BOARD_APP_KEY`. Sem eles, a validação de PR funciona normalmente e o board apenas não é atualizado.
+- O GitHub App da organização `callplus-board`, com os secrets `CP_BOARD_APP_ID` e `CP_BOARD_APP_KEY`. Ele move os cards e publica a revisão do Claude nos PRs, por isso precisa de escrita em issues, pull requests e projetos da organização. Sem ele, a validação de PR funciona, mas o board não é atualizado e o check de revisão não passa.
+- O secret `CLAUDE_CODE_OAUTH_TOKEN` (repositórios selecionados), para a revisão automática pelo Claude.
