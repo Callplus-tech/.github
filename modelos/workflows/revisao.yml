@@ -1,4 +1,4 @@
-# Revisão de código em todo PR: Codex (automática) ou label "revisao-manual" do PO (contingência).
+# Revisão de código em todo PR: Claude (automática, a cada commit) ou label "revisao-manual" do PO (contingência).
 name: Revisão de código
 
 on:
